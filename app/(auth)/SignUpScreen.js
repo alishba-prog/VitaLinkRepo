@@ -1,7 +1,6 @@
-
-import { LinearGradient } from "expo-linear-gradient"
-import { useRouter } from "expo-router"
-import { useState } from "react"
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
   Alert,
   Dimensions,
@@ -13,124 +12,116 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from "react-native"
+} from "react-native";
 
-const { width } = Dimensions.get("window")
 
-// ✅ Auto-detect backend address for emulator vs local
-const API_BASE_URL =
-  Platform.OS === "android"
-    ? "http://10.0.2.2:8000/api"
-    : "http://localhost:8000/api"
+const { width } = Dimensions.get("window");
+const API_BASE_URL = "http://192.168.1.16:8000/api";
 
 export default function SignupScreen() {
-  const router = useRouter()
-  const [fullName, setFullName] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [errors, setErrors] = useState({})
+  const router = useRouter();
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [useEmail, setUseEmail] = useState(true); // ✅ Toggle state
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
-  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  // const validatePhone = (phone) => /^[0-9]{10,15}$/.test(phone); // basic validation
+  const validatePhone = (phone) => /^\+[1-9]\d{7,14}$/.test(phone);
   const validatePassword = (password) =>
-    password.length >= 8 && /[A-Z]/.test(password) && /[a-z]/.test(password) && /\d/.test(password)
+    password.length >= 8 &&
+    /[A-Z]/.test(password) &&
+    /[a-z]/.test(password) &&
+    /\d/.test(password);
 
+  const handleSignup = async () => {
+    const trimmedName = fullName.trim();
+    const trimmedEmail = email.trim();
+    const trimmedPhone = phone.trim();
+    const trimmedPassword = password.trim();
 
-   const handleSignup = async () => {
-    // ✅ Trim all fields first
-    const trimmedName = fullName.trim()
-    const trimmedEmail = email.trim()
-    const trimmedPassword = password.trim()
+    const newErrors = {};
+    if (!trimmedName) newErrors.fullName = "Full name is required";
 
-    const newErrors = {}
-    if (!trimmedName) newErrors.fullName = "Full name is required"
-    if (!trimmedEmail) newErrors.email = "Email is required"
-    else if (!validateEmail(trimmedEmail)) newErrors.email = "Please enter a valid email"
+    if (useEmail) {
+      if (!trimmedEmail) newErrors.email = "Email is required";
+      else if (!validateEmail(trimmedEmail))
+        newErrors.email = "Please enter a valid email";
+    } else {
+      if (!trimmedPhone) newErrors.phone = "Phone number is required";
+      else if (!validatePhone(trimmedPhone))
+        newErrors.phone = "Enter valid phone number";
+    }
 
-    if (!trimmedPassword) newErrors.password = "Password is required"
+    if (!trimmedPassword) newErrors.password = "Password is required";
     else if (!validatePassword(trimmedPassword))
-      newErrors.password = "Password must be 8+ characters with uppercase, lowercase, and number"
+      newErrors.password =
+        "Password must be 8+ characters with uppercase, lowercase, and number";
 
     if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      return
+      setErrors(newErrors);
+      return;
     }
 
     try {
-      setLoading(true)
+      setLoading(true);
+      const payload = {
+        fullName: trimmedName,
+        password: trimmedPassword,
+      };
+      if (useEmail) payload.email = trimmedEmail;
+      else payload.phone = trimmedPhone;
+
       const response = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName: trimmedName, email: trimmedEmail, password: trimmedPassword }),
-      })
+        body: JSON.stringify(payload),
+      });
 
-      const data = await response.json()
+      const data = await response.json();
       if (response.ok) {
         Alert.alert("Success", "Account created successfully!", [
           { text: "OK", onPress: () => router.push("/Login") },
-        ])
+        ]);
       } else {
-        Alert.alert("Error", data.message || "Signup failed")
+        Alert.alert("Error", data.message || "Signup failed");
       }
     } catch (error) {
-      Alert.alert("Error", "Unable to connect to server")
+      Alert.alert("Error", "Unable to connect to server");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
-
-  // const handleSignup = async () => {
-  //   const newErrors = {}
-  //   if (!fullName.trim()) newErrors.fullName = "Full name is required"
-  //   if (!email) newErrors.email = "Email is required"
-  //   else if (!validateEmail(email)) newErrors.email = "Please enter a valid email"
-
-  //   if (!password) newErrors.password = "Password is required"
-  //   else if (!validatePassword(password))
-  //     newErrors.password = "Password must be 8+ characters with uppercase, lowercase, and number"
-
-  //   if (Object.keys(newErrors).length > 0) {
-  //     setErrors(newErrors)
-  //     return
-  //   }
-
-  //   try {
-  //     setLoading(true)
-  //     const response = await fetch(`${API_BASE_URL}/auth/signup`, {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({ fullName, email, password }),
-  //     })
-
-  //     const data = await response.json()
-  //     if (response.ok) {
-  //       Alert.alert("Success", "Account created successfully!", [
-  //         { text: "OK", onPress: () => router.push("/Login") },
-  //       ])
-  //     } else {
-  //       Alert.alert("Error", data.message || "Signup failed")
-  //     }
-  //   } catch (error) {
-  //     Alert.alert("Error", "Unable to connect to server")
-  //   } finally {
-  //     setLoading(false)
-  //   }
-  // }
+  };
 
   const handleGoogleSignup = () => {
-    Alert.alert("Google Sign Up", "Google authentication would be implemented here")
-  }
+    Alert.alert(
+      "Google Sign Up",
+      "Google authentication would be implemented here"
+    );
+  };
 
   return (
-    <LinearGradient colors={["#E0F2FE", "#BFDBFE", "#DBEAFE"]} style={styles.container}>
+    <LinearGradient
+      colors={["#E0F2FE", "#BFDBFE", "#DBEAFE"]}
+      style={styles.container}
+    >
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={80}
       >
-        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.card}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
               <Text style={styles.backText}>← Back</Text>
             </TouchableOpacity>
 
@@ -147,30 +138,95 @@ export default function SignupScreen() {
                   placeholderTextColor="#9CA3AF"
                   value={fullName}
                   onChangeText={(text) => {
-                    setFullName(text)
-                    if (errors.fullName) setErrors({ ...errors, fullName: null })
+                    setFullName(text);
+                    if (errors.fullName)
+                      setErrors({ ...errors, fullName: null });
                   }}
                 />
-                {errors.fullName && <Text style={styles.errorText}>{errors.fullName}</Text>}
+                {errors.fullName && (
+                  <Text style={styles.errorText}>{errors.fullName}</Text>
+                )}
               </View>
 
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Email Address</Text>
-                <TextInput
-                  style={[styles.input, errors.email && styles.inputError]}
-                  placeholder="Enter email"
-                  placeholderTextColor="#9CA3AF"
-                  value={email}
-                  onChangeText={(text) => {
-                    setEmail(text)
-                    if (errors.email) setErrors({ ...errors, email: null })
-                  }}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-                {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+              {/* ✅ Toggle between Email & Phone */}
+              <View style={styles.toggleContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.toggleButton,
+                    useEmail && styles.toggleButtonActive,
+                  ]}
+                  onPress={() => setUseEmail(true)}
+                >
+                  <Text
+                    style={[
+                      styles.toggleText,
+                      useEmail && styles.toggleTextActive,
+                    ]}
+                  >
+                    Email
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.toggleButton,
+                    !useEmail && styles.toggleButtonActive,
+                  ]}
+                  onPress={() => setUseEmail(false)}
+                >
+                  <Text
+                    style={[
+                      styles.toggleText,
+                      !useEmail && styles.toggleTextActive,
+                    ]}
+                  >
+                    Phone
+                  </Text>
+                </TouchableOpacity>
               </View>
 
+              {useEmail ? (
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Email Address</Text>
+                  <TextInput
+                    style={[styles.input, errors.email && styles.inputError]}
+                    placeholder="Enter email"
+                    placeholderTextColor="#9CA3AF"
+                    value={email}
+                    onChangeText={(text) => {
+                      setEmail(text);
+                      if (errors.email)
+                        setErrors({ ...errors, email: null });
+                    }}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                  {errors.email && (
+                    <Text style={styles.errorText}>{errors.email}</Text>
+                  )}
+                </View>
+              ) : (
+                <View style={styles.inputContainer}>
+                  <Text style={styles.label}>Phone Number</Text>
+                  <TextInput
+                    style={[styles.input, errors.phone && styles.inputError]}
+                    placeholder="Enter phone number"
+                    placeholderTextColor="#9CA3AF"
+                    value={phone}
+                    onChangeText={(text) => {
+                      setPhone(text);
+                      if (errors.phone)
+                        setErrors({ ...errors, phone: null });
+                    }}
+                    keyboardType="phone-pad"
+                  />
+                  {errors.phone && (
+                    <Text style={styles.errorText}>{errors.phone}</Text>
+                  )}
+                </View>
+              )}
+
+              {/* Password Input */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Password</Text>
                 <TextInput
@@ -179,18 +235,29 @@ export default function SignupScreen() {
                   placeholderTextColor="#9CA3AF"
                   value={password}
                   onChangeText={(text) => {
-                    setPassword(text)
-                    if (errors.password) setErrors({ ...errors, password: null })
+                    setPassword(text);
+                    if (errors.password)
+                      setErrors({ ...errors, password: null });
                   }}
                   secureTextEntry
                 />
-                {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+                {errors.password && (
+                  <Text style={styles.errorText}>{errors.password}</Text>
+                )}
               </View>
 
-              <TouchableOpacity style={styles.signupButton} onPress={handleSignup} activeOpacity={0.85} disabled={loading}>
-                <Text style={styles.signupButtonText}>{loading ? "Signing Up..." : "Start Your Health Journey"}</Text>
+              <TouchableOpacity
+                style={styles.signupButton}
+                onPress={handleSignup}
+                activeOpacity={0.85}
+                disabled={loading}
+              >
+                <Text style={styles.signupButtonText}>
+                  {loading ? "Signing Up..." : "Start Your Health Journey"}
+                </Text>
               </TouchableOpacity>
 
+              {/* Social Buttons (unchanged) */}
               <View style={styles.divider}>
                 <View style={styles.dividerLine} />
                 <Text style={styles.dividerText}>Or sign up with</Text>
@@ -201,7 +268,11 @@ export default function SignupScreen() {
                 <TouchableOpacity style={styles.socialButton} activeOpacity={0.7}>
                   <Text style={[styles.socialIcon, { color: "#1877F2" }]}>f</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.socialButton} onPress={handleGoogleSignup} activeOpacity={0.7}>
+                <TouchableOpacity
+                  style={styles.socialButton}
+                  onPress={handleGoogleSignup}
+                  activeOpacity={0.7}
+                >
                   <Text style={[styles.socialIcon, { color: "#DB4437" }]}>G</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.socialButton} activeOpacity={0.7}>
@@ -220,11 +291,11 @@ export default function SignupScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
     </LinearGradient>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
-  container: {
+    container: {
     flex: 1,
   },
   scrollContainer: {
@@ -420,4 +491,30 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     textDecorationLine: "underline",
   },
-})
+  toggleContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    backgroundColor: "#ECFDF5",
+    borderRadius: 20,
+    marginBottom: 20,
+    padding: 4,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: "center",
+    borderRadius: 16,
+  },
+  toggleButtonActive: {
+    backgroundColor: "#10B981",
+    elevation: 4,
+  },
+  toggleText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+  toggleTextActive: {
+    color: "#FFFFFF",
+  },
+});

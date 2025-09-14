@@ -1,11 +1,11 @@
-import AsyncStorage from "@react-native-async-storage/async-storage"; // ✅ for storing token securely
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
   Dimensions,
-  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -13,71 +13,78 @@ import {
   View,
 } from "react-native";
 
-const { width } = Dimensions.get("window")
-
-// ✅ Auto-detect backend address for emulator vs local
-const API_BASE_URL =
-  Platform.OS === "android"
-    ? "http://10.0.2.2:8000/api"
-    : "http://localhost:8000/api"
+const { width } = Dimensions.get("window");
+const API_BASE_URL = "http://192.168.1.16:8000/api";
 
 export default function LoginScreen() {
-  const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [rememberMe, setRememberMe] = useState(false)
-  const [errors, setErrors] = useState({})
-  const [loading, setLoading] = useState(false)
+  const router = useRouter();
+  const [identifier, setIdentifier] = useState(""); // email or phone
+  const [password, setPassword] = useState("");
+  const [useEmail, setUseEmail] = useState(true); // ✅ toggle state
+  const [rememberMe, setRememberMe] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
-  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const validatePhone = (phone) => /^\+[1-9]\d{7,14}$/.test(phone);
 
   const handleLogin = async () => {
-    const newErrors = {}
+    const trimmedIdentifier = identifier.trim();
+    const trimmedPassword = password.trim();
 
-    if (!email) newErrors.email = "Email is required"
-    else if (!validateEmail(email.trim())) newErrors.email = "Please enter a valid email"
+    const newErrors = {};
+    if (!trimmedIdentifier) {
+      newErrors.identifier = useEmail
+        ? "Email is required"
+        : "Phone number is required";
+    } else if (useEmail && !validateEmail(trimmedIdentifier)) {
+      newErrors.identifier = "Enter a valid email address";
+    } else if (!useEmail && !validatePhone(trimmedIdentifier)) {
+      newErrors.identifier = "Enter phone in format +923001234567";
+    }
 
-    if (!password.trim()) newErrors.password = "Password is required"
+    if (!trimmedPassword) newErrors.password = "Password is required";
 
     if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      return
+      setErrors(newErrors);
+      return;
     }
 
     try {
-      setLoading(true)
+      setLoading(true);
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email:email.trim(), password:password.trim() }),
-      })
+        body: JSON.stringify({
+          identifier: trimmedIdentifier,
+          password: trimmedPassword,
+        }),
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (response.ok) {
-        // ✅ Save token to AsyncStorage if user checked "Remember Me"
         if (rememberMe) {
-          await AsyncStorage.setItem("token", data.token)
+          await AsyncStorage.setItem("token", data.token);
         }
         Alert.alert("Success", "Logged in successfully!", [
           { text: "OK", onPress: () => router.replace("/UserScreen") },
-        ])
+        ]);
       } else {
-        Alert.alert("Error", data.message || "Invalid credentials")
+        Alert.alert("Error", data.message || "Invalid credentials");
       }
     } catch (error) {
-      Alert.alert("Error", "Unable to connect to server")
+      Alert.alert("Error", "Unable to connect to server");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
-
-  const handleGoogleLogin = () => {
-    Alert.alert("Google Login", "Google authentication would be implemented here")
-  }
+  };
 
   return (
-    <LinearGradient colors={["#E0F2FE", "#BFDBFE", "#DBEAFE"]} style={styles.container}>
+    <LinearGradient
+      colors={["#E0F2FE", "#BFDBFE", "#DBEAFE"]}
+      style={styles.container}
+    >
       <View style={styles.container}>
         <View style={styles.card}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
@@ -89,35 +96,69 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.form}>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={[styles.input, errors.email && styles.inputError]}
-                placeholder="Enter email"
-                value={email}
-                onChangeText={(text) => {
-                  setEmail(text)
-                  if (errors.email) setErrors({ ...errors, email: null })
-                }}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-              {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+            {/* ✅ Email/Phone Toggle */}
+            <View style={styles.toggleContainer}>
+              <TouchableOpacity
+                style={[styles.toggleButton, useEmail && styles.toggleButtonActive]}
+                onPress={() => setUseEmail(true)}
+              >
+                <Text
+                  style={[styles.toggleText, useEmail && styles.toggleTextActive]}
+                >
+                  Email
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.toggleButton, !useEmail && styles.toggleButtonActive]}
+                onPress={() => setUseEmail(false)}
+              >
+                <Text
+                  style={[styles.toggleText, !useEmail && styles.toggleTextActive]}
+                >
+                  Phone
+                </Text>
+              </TouchableOpacity>
             </View>
 
+            {/* Identifier input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={[styles.input, errors.identifier && styles.inputError]}
+                placeholder={useEmail ? "Enter email" : "Enter phone number (+923001234567)"}
+                value={identifier}
+                onChangeText={(text) => {
+                  setIdentifier(text);
+                  if (errors.identifier)
+                    setErrors({ ...errors, identifier: null });
+                }}
+                keyboardType={useEmail ? "email-address" : "phone-pad"}
+                autoCapitalize="none"
+              />
+              {errors.identifier && (
+                <Text style={styles.errorText}>{errors.identifier}</Text>
+              )}
+            </View>
+
+            {/* Password input */}
             <View style={styles.inputContainer}>
               <TextInput
                 style={[styles.input, errors.password && styles.inputError]}
                 placeholder="Password"
                 value={password}
                 onChangeText={(text) => {
-                  setPassword(text)
-                  if (errors.password) setErrors({ ...errors, password: null })
+                  setPassword(text);
+                  if (errors.password)
+                    setErrors({ ...errors, password: null });
                 }}
                 secureTextEntry
               />
-              {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+              {errors.password && (
+                <Text style={styles.errorText}>{errors.password}</Text>
+              )}
             </View>
 
+            {/* Remember Me + Forgot */}
             <View style={styles.optionsRow}>
               <TouchableOpacity
                 style={styles.checkboxRow}
@@ -134,6 +175,7 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
+            {/* Login button */}
             <TouchableOpacity
               style={styles.loginButton}
               onPress={handleLogin}
@@ -144,6 +186,7 @@ export default function LoginScreen() {
               </Text>
             </TouchableOpacity>
 
+            {/* Socials */}
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
               <Text style={styles.dividerText}>Sign in with</Text>
@@ -154,7 +197,7 @@ export default function LoginScreen() {
               <TouchableOpacity style={styles.socialButton}>
                 <Text style={styles.socialIcon}>f</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.socialButton} onPress={handleGoogleLogin}>
+              <TouchableOpacity style={styles.socialButton}>
                 <Text style={styles.socialIcon}>G</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.socialButton}>
@@ -162,6 +205,7 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
+            {/* Signup prompt */}
             <View style={styles.signupPrompt}>
               <Text style={styles.signupText}>Don't have an account? </Text>
               <TouchableOpacity onPress={() => router.push("/SignUpScreen")}>
@@ -172,12 +216,11 @@ export default function LoginScreen() {
         </View>
       </View>
     </LinearGradient>
-  )
+  );
 }
 
-
-
 const styles = StyleSheet.create({
+ 
   container: {
     flex: 1,
     justifyContent: "center",
@@ -341,4 +384,30 @@ const styles = StyleSheet.create({
     color: "#10B981",
     fontWeight: "600",
   },
-})
+  toggleContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    backgroundColor: "#ECFDF5",
+    borderRadius: 20,
+    marginBottom: 16,
+    padding: 4,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: "center",
+    borderRadius: 16,
+  },
+  toggleButtonActive: {
+    backgroundColor: "#10B981",
+    elevation: 4,
+  },
+  toggleText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+  toggleTextActive: {
+    color: "#FFFFFF",
+  },
+});

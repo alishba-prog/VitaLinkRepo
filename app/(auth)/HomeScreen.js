@@ -27,7 +27,7 @@ export default function HomeScreen() {
             <Text style={styles.createAccountText}>Register as User</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => router.push("/Login")}>
+          <TouchableOpacity onPress={() => router.push("/(auth)/Login")}>
             <LinearGradient colors={["#10B981", "#059669"]} style={styles.loginButton}>
               <Text style={styles.loginText}>Log In</Text>
             </LinearGradient>

@@ -11,10 +11,10 @@ export default function AuthLayout() {
           animation: 'slide_from_right', // Smooth transitions between auth screens
         }}
       >
-        <Stack.Screen 
+        {/* <Stack.Screen 
           name="SplashScreen" 
 
-        />
+        /> */}
         <Stack.Screen 
           name="HomeScreen" 
 
