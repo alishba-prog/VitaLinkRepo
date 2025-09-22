@@ -1,37 +1,38 @@
+"use client"
 
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
+import type React from "react"
 import { useState } from "react"
-import {
-  Alert,
-  Dimensions,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
-} from "react-native"
+import { Alert, Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"
 
 const { width } = Dimensions.get("window")
-const API_BASE_URL = "http://192.168.1.16:8000/api"
+const API_BASE_URL = "http://192.168.1.21:8000/api"
 
-export default function ForgotPasswordScreen() {
+interface ResetPayload {
+  via: "email" | "whatsapp"
+  email?: string
+  phone?: string
+}
+
+interface ApiResponse {
+  message?: string
+}
+
+ const Forgot: React.FC = () => {
   const router = useRouter()
 
-  // States for email and phone
-  const [email, setEmail] = useState("")
-  const [phone, setPhone] = useState("")
-  const [useWhatsApp, setUseWhatsApp] = useState(false)
+  const [email, setEmail] = useState<string>("")
+  const [phone, setPhone] = useState<string>("")
+  const [useWhatsApp, setUseWhatsApp] = useState<boolean>(false)
+  const [isSubmitted, setIsSubmitted] = useState<boolean>(false)
+  const [error, setError] = useState<string>("")
+  const [loading, setLoading] = useState<boolean>(false)
 
-  const [isSubmitted, setIsSubmitted] = useState(false)
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+  const validateEmail = (email: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  const validatePhone = (phone: string): boolean => /^\+?\d{10,15}$/.test(phone)
 
-  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-  const validatePhone = (phone) => /^\+?\d{10,15}$/.test(phone)
-
-  const handleResetPassword = async () => {
-    // ✅ Validation depending on mode
+  const handleResetPassword = async (): Promise<void> => {
     if (useWhatsApp) {
       if (!phone) {
         setError("Phone number is required")
@@ -55,7 +56,7 @@ export default function ForgotPasswordScreen() {
     try {
       setLoading(true)
 
-      const payload = useWhatsApp
+      const payload: ResetPayload = useWhatsApp
         ? { via: "whatsapp", phone: phone.trim() }
         : { via: "email", email: email.trim() }
 
@@ -65,7 +66,7 @@ export default function ForgotPasswordScreen() {
         body: JSON.stringify(payload),
       })
 
-      const data = await response.json()
+      const data: ApiResponse = await response.json()
 
       if (response.ok) {
         setIsSubmitted(true)
@@ -77,6 +78,16 @@ export default function ForgotPasswordScreen() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleEmailChange = (text: string): void => {
+    setEmail(text)
+    if (error) setError("")
+  }
+
+  const handlePhoneChange = (text: string): void => {
+    setPhone(text)
+    if (error) setError("")
   }
 
   return (
@@ -96,17 +107,12 @@ export default function ForgotPasswordScreen() {
               </View>
 
               <View style={styles.form}>
-                {/* Toggle between Email & WhatsApp */}
                 <View style={{ flexDirection: "row", justifyContent: "center", marginBottom: 16 }}>
                   <TouchableOpacity onPress={() => setUseWhatsApp(false)}>
-                    <Text style={[styles.toggle, !useWhatsApp && styles.toggleActive]}>
-                      Email
-                    </Text>
+                    <Text style={[styles.toggle, !useWhatsApp && styles.toggleActive]}>Email</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => setUseWhatsApp(true)}>
-                    <Text style={[styles.toggle, useWhatsApp && styles.toggleActive]}>
-                      WhatsApp
-                    </Text>
+                    <Text style={[styles.toggle, useWhatsApp && styles.toggleActive]}>WhatsApp</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -116,10 +122,7 @@ export default function ForgotPasswordScreen() {
                       style={[styles.input, error && styles.inputError]}
                       placeholder="Enter phone (+923001234567)"
                       value={phone}
-                      onChangeText={(text) => {
-                        setPhone(text)
-                        if (error) setError("")
-                      }}
+                      onChangeText={handlePhoneChange}
                       keyboardType="phone-pad"
                     />
                   ) : (
@@ -127,10 +130,7 @@ export default function ForgotPasswordScreen() {
                       style={[styles.input, error && styles.inputError]}
                       placeholder="Enter your email"
                       value={email}
-                      onChangeText={(text) => {
-                        setEmail(text)
-                        if (error) setError("")
-                      }}
+                      onChangeText={handleEmailChange}
                       keyboardType="email-address"
                       autoCapitalize="none"
                     />
@@ -138,11 +138,7 @@ export default function ForgotPasswordScreen() {
                   {error && <Text style={styles.errorText}>{error}</Text>}
                 </View>
 
-                <TouchableOpacity
-                  style={styles.resetButton}
-                  onPress={handleResetPassword}
-                  disabled={loading}
-                >
+                <TouchableOpacity style={styles.resetButton} onPress={handleResetPassword} disabled={loading}>
                   <Text style={styles.resetButtonText}>
                     {loading ? "Sending..." : useWhatsApp ? "Send via WhatsApp" : "Send Reset Link"}
                   </Text>
@@ -158,16 +154,9 @@ export default function ForgotPasswordScreen() {
               <View style={styles.successIcon}>
                 <Text style={styles.successIconText}>✓</Text>
               </View>
-              <Text style={styles.successTitle}>
-                {useWhatsApp ? "Check Your WhatsApp" : "Check Your Email"}
-              </Text>
-              <Text style={styles.successMessage}>
-                We've sent your new password to {useWhatsApp ? phone : email}
-              </Text>
-              <TouchableOpacity
-                style={styles.resetButton}
-                onPress={() => router.push("/Login")}
-              >
+              <Text style={styles.successTitle}>{useWhatsApp ? "Check Your WhatsApp" : "Check Your Email"}</Text>
+              <Text style={styles.successMessage}>We've sent your new password to {useWhatsApp ? phone : email}</Text>
+              <TouchableOpacity style={styles.resetButton} onPress={() => router.push("/Login")}>
                 <Text style={styles.resetButtonText}>Back to Login</Text>
               </TouchableOpacity>
             </View>
@@ -178,8 +167,10 @@ export default function ForgotPasswordScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+export default Forgot
 
+
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",

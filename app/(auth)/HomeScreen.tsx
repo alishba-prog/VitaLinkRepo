@@ -1,19 +1,31 @@
-import { LinearGradient } from "expo-linear-gradient"
-import { useRouter } from "expo-router"
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native"
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import React from "react";
+import {
+  Dimensions,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-const { width } = Dimensions.get("window")
+const { width } = Dimensions.get("window");
 
-export default function HomeScreen() {
-  const router = useRouter()
+const HomeScreen: React.FC = () => {
+  const router = useRouter();
 
   return (
-    <LinearGradient colors={["#E0F2FE", "#BFDBFE", "#DBEAFE"]} style={styles.container}>
+    <LinearGradient
+      colors={["#E0F2FE", "#BFDBFE", "#DBEAFE"]}
+      style={styles.container}
+    >
       <View style={styles.card}>
         <View style={styles.header}>
           <Text style={styles.title}>Welcome to VitaLink</Text>
           <Text style={styles.subtitle}>Your Health, Our Priority</Text>
-          <Text style={styles.description}>Access quality healthcare services with ease and confidence</Text>
+          <Text style={styles.description}>
+            Access quality healthcare services with ease and confidence
+          </Text>
         </View>
 
         <View style={styles.illustrationContainer}>
@@ -23,20 +35,29 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.createAccountButton} onPress={() => router.push("/SignUpScreen")}>
+          <TouchableOpacity
+            style={styles.createAccountButton}
+            onPress={() => router.push("/(auth)/SignupScreen")}
+          >
             <Text style={styles.createAccountText}>Register as User</Text>
           </TouchableOpacity>
 
+          {/* Changed login path to go to UserScreen */}
           <TouchableOpacity onPress={() => router.push("/(auth)/Login")}>
-            <LinearGradient colors={["#10B981", "#059669"]} style={styles.loginButton}>
+            <LinearGradient
+              colors={["#10B981", "#059669"]}
+              style={styles.loginButton}
+            >
               <Text style={styles.loginText}>Log In</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
       </View>
     </LinearGradient>
-  )
-}
+  );
+};
+
+export default HomeScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -54,7 +75,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15, // Softer shadow for gentler appearance
+    shadowOpacity: 0.15,
     shadowRadius: 16,
     elevation: 8,
   },
@@ -63,14 +84,14 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   title: {
-    fontSize: 28, // Slightly larger for better hierarchy
+    fontSize: 28,
     fontWeight: "bold",
-    color: "#065F46", // Deep green for trust and health
+    color: "#065F46",
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: "#059669", // Health-themed green
+    color: "#059669",
     marginBottom: 8,
     fontWeight: "500",
   },
@@ -89,10 +110,10 @@ const styles = StyleSheet.create({
     borderRadius: 64,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#ECFDF5", // Light green background for health theme
+    backgroundColor: "#ECFDF5",
   },
   illustrationIcon: {
-    fontSize: 48, // Larger medical symbol for better visibility
+    fontSize: 48,
   },
   buttonContainer: {
     width: "100%",
@@ -101,7 +122,7 @@ const styles = StyleSheet.create({
   createAccountButton: {
     backgroundColor: "#FFFFFF",
     borderWidth: 2,
-    borderColor: "#10B981", // Green border for health theme
+    borderColor: "#10B981",
     borderRadius: 25,
     paddingVertical: 12,
     alignItems: "center",
@@ -109,7 +130,7 @@ const styles = StyleSheet.create({
   createAccountText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#065F46", // Dark green text for health theme
+    color: "#065F46",
   },
   loginButton: {
     borderRadius: 25,
@@ -121,4 +142,4 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#FFFFFF",
   },
-})
+});

@@ -11,12 +11,9 @@ export default function AuthLayout() {
           animation: 'slide_from_right', // Smooth transitions between auth screens
         }}
       >
-        <Stack.Screen name="index" />
-        <Stack.Screen name="HomeScreen" />
-        <Stack.Screen name="Login" />
-        <Stack.Screen name="SignupScreen" />
-        <Stack.Screen name="Forgot" />
-        {/* <Stack.Screen name="UserScreen" /> */}
+      
+        <Stack.Screen name="UserScreen" />
+        
         
       </Stack>
     </View>

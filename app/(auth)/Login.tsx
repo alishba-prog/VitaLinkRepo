@@ -1,57 +1,59 @@
+"use client"
 
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import { useState } from "react";
-import {
-  Alert,
-  Dimensions,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import { LinearGradient } from "expo-linear-gradient"
+import { useRouter } from "expo-router"
+import type React from "react"
+import { useState } from "react"
+import { Alert, Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"
 
-const { width } = Dimensions.get("window");
-const API_BASE_URL = "http://192.168.1.16:8000/api";
+const { width } = Dimensions.get("window")
+const API_BASE_URL = "http://192.168.1.21:8000/api"
 
-export default function LoginScreen() {
-  const router = useRouter();
-  const [identifier, setIdentifier] = useState(""); // email or phone
-  const [password, setPassword] = useState("");
-  const [useEmail, setUseEmail] = useState(true); // ✅ toggle state
-  const [rememberMe, setRememberMe] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
+interface LoginErrors {
+  identifier?: string | null
+  password?: string | null
+}
 
-  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const validatePhone = (phone) => /^\+[1-9]\d{7,14}$/.test(phone);
+interface LoginResponse {
+  token: string
+  message?: string
+}
 
-  const handleLogin = async () => {
-    const trimmedIdentifier = identifier.trim();
-    const trimmedPassword = password.trim();
+const LoginScreen: React.FC = () => {
+  const router = useRouter()
+  const [identifier, setIdentifier] = useState<string>("") // email or phone
+  const [password, setPassword] = useState<string>("")
+  const [useEmail, setUseEmail] = useState<boolean>(true) // ✅ toggle state
+  const [rememberMe, setRememberMe] = useState<boolean>(false)
+  const [errors, setErrors] = useState<LoginErrors>({})
+  const [loading, setLoading] = useState<boolean>(false)
 
-    const newErrors = {};
+  const validateEmail = (email: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  const validatePhone = (phone: string): boolean => /^\+[1-9]\d{7,14}$/.test(phone)
+
+  const handleLogin = async (): Promise<void> => {
+    const trimmedIdentifier = identifier.trim()
+    const trimmedPassword = password.trim()
+
+    const newErrors: LoginErrors = {}
     if (!trimmedIdentifier) {
-      newErrors.identifier = useEmail
-        ? "Email is required"
-        : "Phone number is required";
+      newErrors.identifier = useEmail ? "Email is required" : "Phone number is required"
     } else if (useEmail && !validateEmail(trimmedIdentifier)) {
-      newErrors.identifier = "Enter a valid email address";
+      newErrors.identifier = "Enter a valid email address"
     } else if (!useEmail && !validatePhone(trimmedIdentifier)) {
-      newErrors.identifier = "Enter phone in format +923001234567";
+      newErrors.identifier = "Enter phone in format +923001234567"
     }
 
-    if (!trimmedPassword) newErrors.password = "Password is required";
+    if (!trimmedPassword) newErrors.password = "Password is required"
 
     if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
+      setErrors(newErrors)
+      return
     }
 
     try {
-      setLoading(true);
+      setLoading(true)
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -59,32 +61,29 @@ export default function LoginScreen() {
           identifier: trimmedIdentifier,
           password: trimmedPassword,
         }),
-      });
+      })
 
-      const data = await response.json();
+      const data: LoginResponse = await response.json()
 
       if (response.ok) {
         if (rememberMe) {
-          await AsyncStorage.setItem("token", data.token);
+          await AsyncStorage.setItem("token", data.token)
         }
         Alert.alert("Success", "Logged in successfully!", [
           { text: "OK", onPress: () => router.replace("/UserScreen") },
-        ]);
+        ])
       } else {
-        Alert.alert("Error", data.message || "Invalid credentials");
+        Alert.alert("Error", data.message || "Invalid credentials")
       }
     } catch (error) {
-      Alert.alert("Error", "Unable to connect to server");
+      Alert.alert("Error", "Unable to connect to server")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
-    <LinearGradient
-      colors={["#E0F2FE", "#BFDBFE", "#DBEAFE"]}
-      style={styles.container}
-    >
+    <LinearGradient colors={["#E0F2FE", "#BFDBFE", "#DBEAFE"]} style={styles.container}>
       <View style={styles.container}>
         <View style={styles.card}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
@@ -102,22 +101,14 @@ export default function LoginScreen() {
                 style={[styles.toggleButton, useEmail && styles.toggleButtonActive]}
                 onPress={() => setUseEmail(true)}
               >
-                <Text
-                  style={[styles.toggleText, useEmail && styles.toggleTextActive]}
-                >
-                  Email
-                </Text>
+                <Text style={[styles.toggleText, useEmail && styles.toggleTextActive]}>Email</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.toggleButton, !useEmail && styles.toggleButtonActive]}
                 onPress={() => setUseEmail(false)}
               >
-                <Text
-                  style={[styles.toggleText, !useEmail && styles.toggleTextActive]}
-                >
-                  Phone
-                </Text>
+                <Text style={[styles.toggleText, !useEmail && styles.toggleTextActive]}>Phone</Text>
               </TouchableOpacity>
             </View>
 
@@ -127,17 +118,14 @@ export default function LoginScreen() {
                 style={[styles.input, errors.identifier && styles.inputError]}
                 placeholder={useEmail ? "Enter email" : "Enter phone number (+923001234567)"}
                 value={identifier}
-                onChangeText={(text) => {
-                  setIdentifier(text);
-                  if (errors.identifier)
-                    setErrors({ ...errors, identifier: null });
+                onChangeText={(text: string) => {
+                  setIdentifier(text)
+                  if (errors.identifier) setErrors({ ...errors, identifier: null })
                 }}
                 keyboardType={useEmail ? "email-address" : "phone-pad"}
                 autoCapitalize="none"
               />
-              {errors.identifier && (
-                <Text style={styles.errorText}>{errors.identifier}</Text>
-              )}
+              {errors.identifier && <Text style={styles.errorText}>{errors.identifier}</Text>}
             </View>
 
             {/* Password input */}
@@ -146,24 +134,18 @@ export default function LoginScreen() {
                 style={[styles.input, errors.password && styles.inputError]}
                 placeholder="Password"
                 value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  if (errors.password)
-                    setErrors({ ...errors, password: null });
+                onChangeText={(text: string) => {
+                  setPassword(text)
+                  if (errors.password) setErrors({ ...errors, password: null })
                 }}
                 secureTextEntry
               />
-              {errors.password && (
-                <Text style={styles.errorText}>{errors.password}</Text>
-              )}
+              {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
             </View>
 
             {/* Remember Me + Forgot */}
             <View style={styles.optionsRow}>
-              <TouchableOpacity
-                style={styles.checkboxRow}
-                onPress={() => setRememberMe(!rememberMe)}
-              >
+              <TouchableOpacity style={styles.checkboxRow} onPress={() => setRememberMe(!rememberMe)}>
                 <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
                   {rememberMe && <Text style={styles.checkmark}>✓</Text>}
                 </View>
@@ -176,14 +158,8 @@ export default function LoginScreen() {
             </View>
 
             {/* Login button */}
-            <TouchableOpacity
-              style={styles.loginButton}
-              onPress={handleLogin}
-              disabled={loading}
-            >
-              <Text style={styles.loginButtonText}>
-                {loading ? "Logging in..." : "Log In"}
-              </Text>
+            <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={loading}>
+              <Text style={styles.loginButtonText}>{loading ? "Logging in..." : "Log In"}</Text>
             </TouchableOpacity>
 
             {/* Socials */}
@@ -208,7 +184,7 @@ export default function LoginScreen() {
             {/* Signup prompt */}
             <View style={styles.signupPrompt}>
               <Text style={styles.signupText}>Don't have an account? </Text>
-              <TouchableOpacity onPress={() => router.push("/SignUpScreen")}>
+              <TouchableOpacity onPress={() => router.push("/(auth)/SignupScreen")}>
                 <Text style={styles.signupLink}>Sign Up</Text>
               </TouchableOpacity>
             </View>
@@ -216,11 +192,12 @@ export default function LoginScreen() {
         </View>
       </View>
     </LinearGradient>
-  );
+  )
 }
 
+export default LoginScreen
+
 const styles = StyleSheet.create({
- 
   container: {
     flex: 1,
     justifyContent: "center",
@@ -410,4 +387,4 @@ const styles = StyleSheet.create({
   toggleTextActive: {
     color: "#FFFFFF",
   },
-});
+})

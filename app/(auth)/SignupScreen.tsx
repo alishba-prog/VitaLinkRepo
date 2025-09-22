@@ -1,6 +1,9 @@
-import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import { useState } from "react";
+"use client"
+
+import { LinearGradient } from "expo-linear-gradient"
+import { useRouter } from "expo-router"
+import type React from "react"
+import { useState } from "react"
 import {
   Alert,
   Dimensions,
@@ -12,116 +15,141 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
+} from "react-native"
 
+const { width } = Dimensions.get("window")
+const API_BASE_URL = "http://192.168.1.21:8000/api"
 
-const { width } = Dimensions.get("window");
-const API_BASE_URL = "http://192.168.1.16:8000/api";
+interface ValidationErrors {
+  fullName?: string
+  email?: string
+  phone?: string
+  password?: string
+}
 
-export default function SignupScreen() {
-  const router = useRouter();
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [useEmail, setUseEmail] = useState(true); // ✅ Toggle state
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
+interface SignupPayload {
+  fullName: string
+  password: string
+  email?: string
+  phone?: string
+}
 
-  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  // const validatePhone = (phone) => /^[0-9]{10,15}$/.test(phone); // basic validation
-  const validatePhone = (phone) => /^\+[1-9]\d{7,14}$/.test(phone);
-  const validatePassword = (password) =>
-    password.length >= 8 &&
-    /[A-Z]/.test(password) &&
-    /[a-z]/.test(password) &&
-    /\d/.test(password);
+interface ApiResponse {
+  message?: string
+}
 
-  const handleSignup = async () => {
-    const trimmedName = fullName.trim();
-    const trimmedEmail = email.trim();
-    const trimmedPhone = phone.trim();
-    const trimmedPassword = password.trim();
+const SignupScreen: React.FC = () => {
+  const router = useRouter()
 
-    const newErrors = {};
-    if (!trimmedName) newErrors.fullName = "Full name is required";
+  const [fullName, setFullName] = useState<string>("")
+  const [email, setEmail] = useState<string>("")
+  const [phone, setPhone] = useState<string>("")
+  const [password, setPassword] = useState<string>("")
+  const [useEmail, setUseEmail] = useState<boolean>(true)
+  const [loading, setLoading] = useState<boolean>(false)
+  const [errors, setErrors] = useState<ValidationErrors>({})
+
+  const validateEmail = (email: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  const validatePhone = (phone: string): boolean => /^\+[1-9]\d{7,14}$/.test(phone)
+  const validatePassword = (password: string): boolean =>
+    password.length >= 8 && /[A-Z]/.test(password) && /[a-z]/.test(password) && /\d/.test(password)
+
+  const handleSignup = async (): Promise<void> => {
+    const trimmedName = fullName.trim()
+    const trimmedEmail = email.trim()
+    const trimmedPhone = phone.trim()
+    const trimmedPassword = password.trim()
+
+    const newErrors: ValidationErrors = {}
+    if (!trimmedName) newErrors.fullName = "Full name is required"
 
     if (useEmail) {
-      if (!trimmedEmail) newErrors.email = "Email is required";
-      else if (!validateEmail(trimmedEmail))
-        newErrors.email = "Please enter a valid email";
+      if (!trimmedEmail) newErrors.email = "Email is required"
+      else if (!validateEmail(trimmedEmail)) newErrors.email = "Please enter a valid email"
     } else {
-      if (!trimmedPhone) newErrors.phone = "Phone number is required";
-      else if (!validatePhone(trimmedPhone))
-        newErrors.phone = "Enter valid phone number";
+      if (!trimmedPhone) newErrors.phone = "Phone number is required"
+      else if (!validatePhone(trimmedPhone)) newErrors.phone = "Enter valid phone number"
     }
 
-    if (!trimmedPassword) newErrors.password = "Password is required";
+    if (!trimmedPassword) newErrors.password = "Password is required"
     else if (!validatePassword(trimmedPassword))
-      newErrors.password =
-        "Password must be 8+ characters with uppercase, lowercase, and number";
+      newErrors.password = "Password must be 8+ characters with uppercase, lowercase, and number"
 
     if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
+      setErrors(newErrors)
+      return
     }
 
     try {
-      setLoading(true);
-      const payload = {
+      setLoading(true)
+      const payload: SignupPayload = {
         fullName: trimmedName,
         password: trimmedPassword,
-      };
-      if (useEmail) payload.email = trimmedEmail;
-      else payload.phone = trimmedPhone;
+      }
+      if (useEmail) payload.email = trimmedEmail
+      else payload.phone = trimmedPhone
 
       const response = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-      });
+      })
 
-      const data = await response.json();
+      const data: ApiResponse = await response.json()
       if (response.ok) {
-        Alert.alert("Success", "Account created successfully!", [
-          { text: "OK", onPress: () => router.push("/Login") },
-        ]);
+        Alert.alert("Success", "Account created successfully!", [{ text: "OK", onPress: () => router.push("/Login") }])
       } else {
-        Alert.alert("Error", data.message || "Signup failed");
+        Alert.alert("Error", data.message || "Signup failed")
       }
     } catch (error) {
-      Alert.alert("Error", "Unable to connect to server");
+      Alert.alert("Error", "Unable to connect to server")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  const handleGoogleSignup = () => {
-    Alert.alert(
-      "Google Sign Up",
-      "Google authentication would be implemented here"
-    );
-  };
+  const handleGoogleSignup = (): void => {
+    Alert.alert("Google Sign Up", "Google authentication would be implemented here")
+  }
+
+  const handleFullNameChange = (text: string): void => {
+    setFullName(text)
+    if (errors.fullName) {
+      setErrors({ ...errors, fullName: undefined })
+    }
+  }
+
+  const handleEmailChange = (text: string): void => {
+    setEmail(text)
+    if (errors.email) {
+      setErrors({ ...errors, email: undefined })
+    }
+  }
+
+  const handlePhoneChange = (text: string): void => {
+    setPhone(text)
+    if (errors.phone) {
+      setErrors({ ...errors, phone: undefined })
+    }
+  }
+
+  const handlePasswordChange = (text: string): void => {
+    setPassword(text)
+    if (errors.password) {
+      setErrors({ ...errors, password: undefined })
+    }
+  }
 
   return (
-    <LinearGradient
-      colors={["#E0F2FE", "#BFDBFE", "#DBEAFE"]}
-      style={styles.container}
-    >
+    <LinearGradient colors={["#E0F2FE", "#BFDBFE", "#DBEAFE"]} style={styles.container}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={80}
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContainer}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           <View style={styles.card}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => router.back()}
-            >
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
               <Text style={styles.backText}>← Back</Text>
             </TouchableOpacity>
 
@@ -137,51 +165,24 @@ export default function SignupScreen() {
                   placeholder="Enter full name"
                   placeholderTextColor="#9CA3AF"
                   value={fullName}
-                  onChangeText={(text) => {
-                    setFullName(text);
-                    if (errors.fullName)
-                      setErrors({ ...errors, fullName: null });
-                  }}
+                  onChangeText={handleFullNameChange}
                 />
-                {errors.fullName && (
-                  <Text style={styles.errorText}>{errors.fullName}</Text>
-                )}
+                {errors.fullName && <Text style={styles.errorText}>{errors.fullName}</Text>}
               </View>
 
-              {/* ✅ Toggle between Email & Phone */}
               <View style={styles.toggleContainer}>
                 <TouchableOpacity
-                  style={[
-                    styles.toggleButton,
-                    useEmail && styles.toggleButtonActive,
-                  ]}
+                  style={[styles.toggleButton, useEmail && styles.toggleButtonActive]}
                   onPress={() => setUseEmail(true)}
                 >
-                  <Text
-                    style={[
-                      styles.toggleText,
-                      useEmail && styles.toggleTextActive,
-                    ]}
-                  >
-                    Email
-                  </Text>
+                  <Text style={[styles.toggleText, useEmail && styles.toggleTextActive]}>Email</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[
-                    styles.toggleButton,
-                    !useEmail && styles.toggleButtonActive,
-                  ]}
+                  style={[styles.toggleButton, !useEmail && styles.toggleButtonActive]}
                   onPress={() => setUseEmail(false)}
                 >
-                  <Text
-                    style={[
-                      styles.toggleText,
-                      !useEmail && styles.toggleTextActive,
-                    ]}
-                  >
-                    Phone
-                  </Text>
+                  <Text style={[styles.toggleText, !useEmail && styles.toggleTextActive]}>Phone</Text>
                 </TouchableOpacity>
               </View>
 
@@ -193,17 +194,11 @@ export default function SignupScreen() {
                     placeholder="Enter email"
                     placeholderTextColor="#9CA3AF"
                     value={email}
-                    onChangeText={(text) => {
-                      setEmail(text);
-                      if (errors.email)
-                        setErrors({ ...errors, email: null });
-                    }}
+                    onChangeText={handleEmailChange}
                     keyboardType="email-address"
                     autoCapitalize="none"
                   />
-                  {errors.email && (
-                    <Text style={styles.errorText}>{errors.email}</Text>
-                  )}
+                  {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
                 </View>
               ) : (
                 <View style={styles.inputContainer}>
@@ -213,20 +208,13 @@ export default function SignupScreen() {
                     placeholder="Enter phone number"
                     placeholderTextColor="#9CA3AF"
                     value={phone}
-                    onChangeText={(text) => {
-                      setPhone(text);
-                      if (errors.phone)
-                        setErrors({ ...errors, phone: null });
-                    }}
+                    onChangeText={handlePhoneChange}
                     keyboardType="phone-pad"
                   />
-                  {errors.phone && (
-                    <Text style={styles.errorText}>{errors.phone}</Text>
-                  )}
+                  {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
                 </View>
               )}
 
-              {/* Password Input */}
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Password</Text>
                 <TextInput
@@ -234,16 +222,10 @@ export default function SignupScreen() {
                   placeholder="Enter password"
                   placeholderTextColor="#9CA3AF"
                   value={password}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    if (errors.password)
-                      setErrors({ ...errors, password: null });
-                  }}
+                  onChangeText={handlePasswordChange}
                   secureTextEntry
                 />
-                {errors.password && (
-                  <Text style={styles.errorText}>{errors.password}</Text>
-                )}
+                {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
               </View>
 
               <TouchableOpacity
@@ -252,12 +234,9 @@ export default function SignupScreen() {
                 activeOpacity={0.85}
                 disabled={loading}
               >
-                <Text style={styles.signupButtonText}>
-                  {loading ? "Signing Up..." : "Start Your Health Journey"}
-                </Text>
+                <Text style={styles.signupButtonText}>{loading ? "Signing Up..." : "Start Your Health Journey"}</Text>
               </TouchableOpacity>
 
-              {/* Social Buttons (unchanged) */}
               <View style={styles.divider}>
                 <View style={styles.dividerLine} />
                 <Text style={styles.dividerText}>Or sign up with</Text>
@@ -268,11 +247,7 @@ export default function SignupScreen() {
                 <TouchableOpacity style={styles.socialButton} activeOpacity={0.7}>
                   <Text style={[styles.socialIcon, { color: "#1877F2" }]}>f</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.socialButton}
-                  onPress={handleGoogleSignup}
-                  activeOpacity={0.7}
-                >
+                <TouchableOpacity style={styles.socialButton} onPress={handleGoogleSignup} activeOpacity={0.7}>
                   <Text style={[styles.socialIcon, { color: "#DB4437" }]}>G</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.socialButton} activeOpacity={0.7}>
@@ -291,11 +266,13 @@ export default function SignupScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
     </LinearGradient>
-  );
+  )
 }
 
+export default SignupScreen
+
 const styles = StyleSheet.create({
-    container: {
+  container: {
     flex: 1,
   },
   scrollContainer: {
@@ -517,4 +494,4 @@ const styles = StyleSheet.create({
   toggleTextActive: {
     color: "#FFFFFF",
   },
-});
+})
